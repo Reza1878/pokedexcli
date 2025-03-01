@@ -10,13 +10,13 @@ type cacheEntry struct {
 	Val       []byte
 }
 
-type cache struct {
+type Cache struct {
 	entry    map[string]cacheEntry
 	mu       *sync.Mutex
 	interval time.Duration
 }
 
-func (c *cache) Add(key string, val []byte) {
+func (c *Cache) Add(key string, val []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -26,7 +26,7 @@ func (c *cache) Add(key string, val []byte) {
 	}
 }
 
-func (c *cache) Get(key string) ([]byte, bool) {
+func (c *Cache) Get(key string) ([]byte, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -39,24 +39,26 @@ func (c *cache) Get(key string) ([]byte, bool) {
 	return v.Val, ok
 }
 
-func (c *cache) reapLoop() {
+func (c *Cache) reapLoop() {
 	ticker := time.NewTicker(c.interval)
 	defer ticker.Stop()
 
 	for range ticker.C {
+		c.mu.Lock()
 		for k, v := range c.entry {
 			elapsed := time.Since(v.CreatedAt)
 			if elapsed > c.interval {
 				delete(c.entry, k)
 			}
 		}
+		c.mu.Unlock()
 	}
 }
 
-func NewCache(interval time.Duration) *cache {
-	c := cache{interval: interval}
+func NewCache(interval time.Duration) *Cache {
+	c := Cache{interval: interval, mu: &sync.Mutex{}, entry: map[string]cacheEntry{}}
 
-	c.reapLoop()
+	go c.reapLoop()
 
 	return &c
 }

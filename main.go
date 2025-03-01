@@ -4,13 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Reza1878/pokedexcli/entities"
 	"github.com/Reza1878/pokedexcli/helper"
+	"github.com/Reza1878/pokedexcli/internal"
 )
 
 func main() {
 	config := entities.Config{}
+	cacheManager := internal.NewCache(5 * time.Second)
 
 	helpCommand := entities.CliCommand{
 		Name:        "help",
@@ -30,14 +33,14 @@ func main() {
 			Name:        "map",
 			Description: "Display location area",
 			Callback: func() error {
-				return helper.CommandMap(&config)
+				return helper.CommandMap(&config, cacheManager)
 			},
 		},
 		"mapb": {
 			Name:        "mapb",
 			Description: "Display previous location area",
 			Callback: func() error {
-				return helper.CommandMapB(&config)
+				return helper.CommandMapB(&config, cacheManager)
 			},
 		},
 	}

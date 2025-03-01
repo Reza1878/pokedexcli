@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Reza1878/pokedexcli/entities"
+	"github.com/Reza1878/pokedexcli/internal"
 )
 
 func CleanInput(text string) []string {
@@ -41,35 +42,44 @@ func CommandHelp(c *entities.Config, command map[string]entities.CliCommand) err
 	return nil
 }
 
-func CommandMap(c *entities.Config) error {
+func CommandMap(c *entities.Config, cc *internal.Cache) error {
+	var response entities.LocationAreaResponse
+
 	url := c.Next
 	if url == "" {
 		url = "https://pokeapi.co/api/v2/location-area"
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil
-	}
+	// If cache found in the cache manager, use cache otherwise make a request to POKEAPI
+	if v, ok := cc.Get(url); ok {
+		err := json.Unmarshal(v, &response)
+		if err != nil {
+			return err
+		}
+	} else {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil
+		}
 
-	client := http.Client{}
+		client := http.Client{}
 
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
+		res, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
 
-	decoder := json.NewDecoder(res.Body)
+		decoder := json.NewDecoder(res.Body)
 
-	var response entities.LocationAreaResponse
-	err = decoder.Decode(&response)
-	if err != nil {
-		return err
-	}
+		err = decoder.Decode(&response)
+		if err != nil {
+			return err
+		}
 
-	for _, r := range response.Results {
-		fmt.Println(r.Name)
+		for _, r := range response.Results {
+			fmt.Println(r.Name)
+		}
 	}
 
 	c.Next = response.Next
@@ -78,30 +88,41 @@ func CommandMap(c *entities.Config) error {
 	return nil
 }
 
-func CommandMapB(c *entities.Config) error {
+func CommandMapB(c *entities.Config, cc *internal.Cache) error {
+	var response entities.LocationAreaResponse
+
 	if c.Previous == "" {
 		fmt.Println("you're on the first page")
 		return nil
 	}
-	req, err := http.NewRequest("GET", c.Previous, nil)
-	if err != nil {
-		return nil
-	}
 
-	client := http.Client{}
+	// If cache found in the cache manager, use cache otherwise make a request to POKEAPI
+	if v, ok := cc.Get(c.Previous); ok {
+		err := json.Unmarshal(v, &response)
 
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
+		if err != nil {
+			return err
+		}
+	} else {
+		req, err := http.NewRequest("GET", c.Previous, nil)
+		if err != nil {
+			return nil
+		}
 
-	decoder := json.NewDecoder(res.Body)
+		client := http.Client{}
 
-	var response entities.LocationAreaResponse
-	err = decoder.Decode(&response)
-	if err != nil {
-		return err
+		res, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+
+		decoder := json.NewDecoder(res.Body)
+
+		err = decoder.Decode(&response)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, r := range response.Results {
