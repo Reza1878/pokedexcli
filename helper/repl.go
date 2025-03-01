@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -131,6 +132,42 @@ func CommandMapB(c *entities.Config, cc *internal.Cache) error {
 
 	c.Next = response.Next
 	c.Previous = response.Previous
+
+	return nil
+}
+
+func CommandExplore(area string) error {
+	fmt.Println("Exploring", area, "...")
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s", area), nil)
+	if err != nil {
+		return err
+	}
+
+	client := http.Client{}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		fmt.Println("Failed to explore location")
+		return errors.New("failed to explore location")
+	}
+
+	var response entities.ExploreLocationResponse
+	decoder := json.NewDecoder(res.Body)
+
+	err = decoder.Decode(&response)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Found Pokemon:")
+	for _, val := range response.PokemonEncounters {
+		fmt.Println("-", val.Pokemon.Name)
+	}
 
 	return nil
 }

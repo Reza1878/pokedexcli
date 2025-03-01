@@ -43,6 +43,10 @@ func main() {
 				return helper.CommandMapB(&config, cacheManager)
 			},
 		},
+		"explore": {
+			Name:        "explore",
+			Description: "Explore specific location",
+		},
 	}
 
 	helpCommand.Callback = func() error {
@@ -70,8 +74,14 @@ func main() {
 		cleanedInput := helper.CleanInput(input)
 
 		for _, ck := range commandKeys {
-			if ck == cleanedInput[0] {
+			if ck == cleanedInput[0] && ck != "explore" {
 				command[ck].Callback()
+			}
+
+			if ck == "explore" {
+				if len(cleanedInput) > 1 {
+					helper.CommandExplore(cleanedInput[1])
+				}
 			}
 		}
 	}
