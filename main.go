@@ -13,6 +13,10 @@ import (
 
 func main() {
 	config := entities.Config{}
+	pokedex := entities.Pokedex{
+		Pokemon: make(map[string]entities.Pokemon),
+		Tries:   make(map[string]int, 0),
+	}
 	cacheManager := internal.NewCache(5 * time.Second)
 
 	helpCommand := entities.CliCommand{
@@ -47,6 +51,10 @@ func main() {
 			Name:        "explore",
 			Description: "Explore specific location",
 		},
+		"catch": {
+			Name:        "catch",
+			Description: "Catch a Pokemon",
+		},
 	}
 
 	helpCommand.Callback = func() error {
@@ -73,14 +81,30 @@ func main() {
 
 		cleanedInput := helper.CleanInput(input)
 
-		for _, ck := range commandKeys {
-			if ck == cleanedInput[0] && ck != "explore" {
-				command[ck].Callback()
-			}
+		if len(cleanedInput) > 0 {
+			if cleanedInput[0] == "explore" && len(cleanedInput) > 1 {
+				err := helper.CommandExplore(cleanedInput[1])
+				if err != nil {
+					fmt.Println(err)
+				}
 
-			if ck == "explore" {
-				if len(cleanedInput) > 1 {
-					helper.CommandExplore(cleanedInput[1])
+			} else if cleanedInput[0] == "catch" && len(cleanedInput) > 1 {
+				err := helper.CommandCatch(&pokedex, cleanedInput[1])
+				if err != nil {
+					fmt.Println(err)
+				}
+
+			} else if cleanedInput[0] == "inspect" && len(cleanedInput) > 1 {
+				err := helper.CommandInspect(&pokedex, cleanedInput[1])
+				if err != nil {
+					fmt.Println(err)
+				}
+
+			} else {
+				for _, ck := range commandKeys {
+					if ck == cleanedInput[0] {
+						command[ck].Callback()
+					}
 				}
 			}
 		}
